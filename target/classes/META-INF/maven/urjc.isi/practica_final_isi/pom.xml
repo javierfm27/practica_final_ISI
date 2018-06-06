@@ -52,6 +52,45 @@
           <target>1.8</target>
         </configuration>
       </plugin>
+
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <descriptorRefs>
+            <!-- This tells Maven to include all dependencies -->
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+          <archive>
+            <manifest>
+            <addClasspath>true</addClasspath>
+              <mainClass>urjc.isi.practica_final_isi.Main</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>com.heroku.sdk</groupId>
+        <artifactId>heroku-maven-plugin</artifactId>
+        <version>0.4.4</version>
+        <configuration>
+          <jdkVersion>1.8</jdkVersion>
+          <appName>practica_final_isi</appName>
+          <processTypes>
+            <!-- Tell Heroku how to launch your application -->
+            <web>java -jar ./target/practica_final_isi-0.0.1-jar-with-dependencies.jar</web>
+          </processTypes>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 </project>
