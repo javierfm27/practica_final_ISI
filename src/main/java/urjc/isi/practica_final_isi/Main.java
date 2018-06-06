@@ -24,6 +24,8 @@ import java.io.InputStreamReader;
 // it in a DB, and do a SQL SELECT query
 public class Main {
     
+	//test Travis
+	
     // Connection to the SQLite database. Used by insert and select methods.
     // Initialized in main
     private static Connection connection;
