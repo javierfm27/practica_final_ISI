@@ -19,13 +19,14 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-// This code is quite dirty. Use it just as a hello world example 
-// to learn how to use JDBC and SparkJava to upload a file, store 
+// This code is quite dirty. Use it just as a hello world example
+// to learn how to use JDBC and SparkJava to upload a file, store
 // it in a DB, and do a SQL SELECT query
+//New comment
 public class Main {
-    
+
 	//test Travis
-	
+
     // Connection to the SQLite database. Used by insert and select methods.
     // Initialized in main
     private static Connection connection;
@@ -33,7 +34,7 @@ public class Main {
     // Used to illustrate how to route requests to methods instead of
     // using lambda expressions
     public static String doSelect(Request request, Response response) {
-	return select (connection, request.params(":table"), 
+	return select (connection, request.params(":table"),
                                    request.params(":film"));
     }
 
@@ -41,7 +42,7 @@ public class Main {
 	String sql = "SELECT * FROM " + table + " WHERE film=?";
 
 	String result = new String();
-	
+
 	try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 		pstmt.setString(1, film);
 		ResultSet rs = pstmt.executeQuery();
@@ -56,11 +57,11 @@ public class Main {
 	    } catch (SQLException e) {
 	    System.out.println(e.getMessage());
 	}
-	
+
 	return result;
     }
-    
-    
+
+
     public static void insert(Connection conn, String film, String actor) {
 	String sql = "INSERT INTO films(film, actor) VALUES(?,?)";
 
@@ -73,10 +74,10 @@ public class Main {
 	}
     }
 
-    public static void main(String[] args) throws 
+    public static void main(String[] args) throws
 	ClassNotFoundException, SQLException {
 	port(getHerokuAssignedPort());
-	
+
 	// Connect to SQLite sample.db database
 	// connection will be reused by every query in this simplistic example
 	connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
@@ -90,8 +91,8 @@ public class Main {
 
 	// In this case we use a Java 8 Lambda function to process the
 	// GET /upload_films HTTP request, and we return a form
-	get("/upload_films", (req, res) -> 
-	    "<form action='/upload' method='post' enctype='multipart/form-data'>" 
+	get("/upload_films", (req, res) ->
+	    "<form action='/upload' method='post' enctype='multipart/form-data'>"
 	    + "    <input type='file' name='uploaded_films_file' accept='.txt'>"
 	    + "    <button>Upload file</button>" + "</form>");
 	// You must use the name "uploaded_films_file" in the call to
@@ -103,7 +104,7 @@ public class Main {
 	post("/upload", (req, res) -> {
 		req.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/tmp"));
 		String result = "File uploaded!";
-		try (InputStream input = req.raw().getPart("uploaded_films_file").getInputStream()) { 
+		try (InputStream input = req.raw().getPart("uploaded_films_file").getInputStream()) {
 			// getPart needs to use the same name "uploaded_films_file" used in the form
 
 			// Prepare SQL to create table
