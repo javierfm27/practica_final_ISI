@@ -70,7 +70,7 @@
           </descriptorRefs>
           <archive>
             <manifest>
-            <addClasspath>true</addClasspath>
+              <addClasspath>true</addClasspath>
               <mainClass>urjc.isi.practica_final_isi.Main</mainClass>
             </manifest>
           </archive>

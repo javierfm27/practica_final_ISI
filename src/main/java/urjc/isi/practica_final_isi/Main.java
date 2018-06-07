@@ -99,6 +99,9 @@ public class Main {
 	// getPart to retrieve the uploaded file. See next call:
 
 
+	//Get Holla Mundo
+	get("/hola",(req,res)->
+		"<p>Hola Angela, Soy Javi, esto es una prueba</p>");
 	// Retrieves the file uploaded through the /upload_films HTML form
 	// Creates table and stores uploaded file in a two-columns table
 	post("/upload", (req, res) -> {
@@ -137,6 +140,8 @@ public class Main {
 	    });
 
     }
+    
+    
 
     static int getHerokuAssignedPort() {
 	ProcessBuilder processBuilder = new ProcessBuilder();
