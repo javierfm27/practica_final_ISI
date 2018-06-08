@@ -21,7 +21,7 @@ import java.io.InputStreamReader;
 
 public class Main {
 
-	public void main (String[] args) {
+	public static void main (String[] args) {
 		port(getHerokuAssignedPort());
 		
 		//Utilizamos funciones lambda 

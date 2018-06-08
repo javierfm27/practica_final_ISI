@@ -3,7 +3,7 @@
 
   <groupId>urjc.isi</groupId>
   <artifactId>practica_final_isi</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
   <packaging>jar</packaging>
 
   <name>practica_final_isi</name>
@@ -41,6 +41,7 @@
       <version>3.21.0</version>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
@@ -70,7 +71,6 @@
           </descriptorRefs>
           <archive>
             <manifest>
-              <addClasspath>true</addClasspath>
               <mainClass>urjc.isi.practica_final_isi.Main</mainClass>
             </manifest>
           </archive>
