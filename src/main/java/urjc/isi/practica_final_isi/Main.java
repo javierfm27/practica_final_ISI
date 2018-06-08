@@ -24,10 +24,15 @@ public class Main {
 	public static void main (String[] args) {
 		port(getHerokuAssignedPort());
 		
-		//Utilizamos funciones lambda 
-		get("/",(req,res) -> "Probando la aplicacion");
+		//A partir del Main, donde procesaremos toda la aplicacion-> peticiones, posts, etc 
+		//Aqui mostraremos las opciones de nuestra aplicacion
+		get("/",(req,res) -> "Por ejemplo, vamos a probar con subir una base de datos"
+				+ "<form action='/upload' method='post' enctype='multipart/form-data'>" 
+			    + "    <input type='file' name='uploaded_films_file' accept='.txt'>"
+			    + "    <button>Upload file</button>" + "</form>");
 	}
 	
+	//Esencial para Web
     static int getHerokuAssignedPort() {
 	ProcessBuilder processBuilder = new ProcessBuilder();
 	if (processBuilder.environment().get("PORT") != null) {

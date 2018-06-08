@@ -86,7 +86,7 @@
           <appName>practica-final-angela-javi</appName>
           <processTypes>
             <!-- Tell Heroku how to launch your application -->
-            <web>java -jar ./target/practica_final_isi-0.0.1-jar-with-dependencies.jar</web>
+            <web>java -jar /target/practica_final_isi-0.0.1-jar-with-dependencies.jar</web>
           </processTypes>
         </configuration>
       </plugin>
