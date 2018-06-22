@@ -29,17 +29,40 @@ public class Main {
 	public static String mainHTML(Request req,Response resp) {
 		return ("<h1 style='color: red'>ANGELA JAVI APP</h1>"
 				+ "<br>"
-				+ "<p>Debe subir una colección de datos para seguir: "
-				+ "<form action='/upload' method='post' enctype='multipart/form-data'>" 
-			    + "    <input type='file' name='uploaded_films_file' accept='.txt'>"
-			    + "    <button>Upload file</button>" + "</form></p>");
+				+ "<p> Aplicación Donde a partir de los datos de IMDB, podemos hacer varias cosas<p>"
+				+ "<br>"
+				+ "-> Para cargar los datos <a href='/data'> Haz click aqui</a>");
 	}
 	
 	
 	
 	//Metodo que se encargara de crear una base de datos con los datos cargados
-	public static String loadDatabase(Request req,Response resp) {
-		return (req.contentType());
+	public static String getData(Request req,Response resp) throws SQLException {
+		System.out.println("Hola");
+		//Preparamos SQL para crear nuestra Base de Datos
+		Statement stat = conn.createStatement();
+		
+		//Antes de nada borramos las tablas, usadas anteriormente por si las tenemos guardadas de otras
+		//conexiones
+		stat.executeUpdate("drop table if exists actores");
+		stat.executeUpdate("drop table if exists peliculas");
+		stat.executeUpdate("drop table if exists actuaEn");
+		
+		//Procedemos a crear nuestra base de Datos, basandonos en un modelo de Entidad Relacion
+		//Observando el diagrama creado para nuestra APP, tendremos las siguientes Tablas
+		stat.executeUpdate("create table actores(Nombre varchar(30),"
+				+ "primary key(Nombre))");
+		stat.executeUpdate("create table peliculas(Nombre varchar(100),"
+				+ "fecha INT,"
+				+ "primary key(nombre,fecha))");
+		stat.executeUpdate("create table actuaEn(NombreActor varchar(30),"
+				+ "NombrePeli varchar(100),"
+				+ "fechaPeli INT,"
+				+ "primary key(NombreActor,NombrePeli,fechaPeli),"
+				+ "foreign key(NombreActor) references actores(Nombre),"
+				+ "foreign key(NombrePeli) references peliculas(Nombre),"
+				+ "foreign key(fechaPeli) references peliculas(fecha))");
+		return ("Tablas Creadas");
 	}
 	
 	
@@ -51,18 +74,20 @@ public class Main {
 	
 	public static void main (String[] args) {
 		port(getHerokuAssignedPort());
-		
 		try {
 			//Inicio de Driver para base de datos
-			conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+			conn = DriverManager.getConnection("jdbc:sqlite:database.db");	
+			
+			//Recursos de la APP
+			get("/",Main::mainHTML);
+			get("/data",Main::getData);
 			
 		}catch(SQLException ex){
+			System.out.println("Ha habido un error");
 			System.out.println(ex.getMessage());
-		}
-		
-		get("/",Main::mainHTML);
-		post("/upload",Main::loadDatabase);
+		};
 	}
+	
 	
 	
 	//Esencial para Web
@@ -71,6 +96,6 @@ public class Main {
 	if (processBuilder.environment().get("PORT") != null) {
 	    return Integer.parseInt(processBuilder.environment().get("PORT"));
 	}
-	return 4567; // return default port if heroku-port isn't set (i.e. on localhost)
+	return 4560; // return default port if heroku-port isn't set (i.e. on localhost)
     }
 }
