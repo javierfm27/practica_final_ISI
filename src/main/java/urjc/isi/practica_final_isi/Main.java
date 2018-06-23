@@ -62,6 +62,10 @@ public class Main {
 				+ "foreign key(NombreActor) references actores(Nombre),"
 				+ "foreign key(NombrePeli) references peliculas(Nombre),"
 				+ "foreign key(fechaPeli) references peliculas(fecha))");
+		
+		//Una vez creadas vamos a introducir lo datos de nuestro fichero a la base de datos.
+		//Hemos optado por suprimir la opcion de que fichero subir, por complejidad y falta de tiempo
+		
 		return ("Tablas Creadas");
 	}
 	
