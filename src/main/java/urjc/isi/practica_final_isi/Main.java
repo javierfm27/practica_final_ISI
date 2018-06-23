@@ -63,11 +63,11 @@ public class Main {
 			stat.executeUpdate("create table actores(Nombre varchar(30),"
 					+ "primary key(Nombre))");
 			stat.executeUpdate("create table peliculas(Nombre varchar(100),"
-					+ "fecha INT,"
+					+ "fecha varchar(4),"
 					+ "primary key(nombre,fecha))");
 			stat.executeUpdate("create table actuaEn(NombreActor varchar(30),"
 					+ "NombrePeli varchar(100),"
-					+ "fechaPeli INT,"
+					+ "fechaPeli varchar(4),"
 					+ "primary key(NombreActor,NombrePeli,fechaPeli),"
 					+ "foreign key(NombreActor) references actores(Nombre),"
 					+ "foreign key(NombrePeli) references peliculas(Nombre),"
@@ -84,7 +84,7 @@ public class Main {
 			StringTokenizer lineTokens = new StringTokenizer(line,"/");
 			//Primer token es la pelicula
 			String film = lineTokens.nextToken();
-			insertFilm(film,stat);
+			filmAnDate(film);
 
 			
 			
@@ -97,9 +97,18 @@ public class Main {
 	}
 	
 	
-	public static void insertFilm(String film,Statement stat) {
-		String [] pelicula = film.split("^[A-Za-z0-9]+[^()]");
-		System.out.println(pelicula[0]);
+	public static String[] filmAnDate(String film) {
+		String[] filmSplit = film.split(" ");
+		String date;
+		for (String x : filmSplit) {
+			if(x.matches(".\\d{4}.")) {
+				date = x;
+				break;
+			}
+			
+		}
+		String pelicula[] = film.split(".\\d{4}.");
+		return [pelicula[0],date];
 	}
 	
 	
