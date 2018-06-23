@@ -1,5 +1,7 @@
+package urjc.isi.practica_final_isi;
 /******************************************************************************
- *  Compilation:  javac Graph.java
+ 
+*  Compilation:  javac Graph.java
  *  Execution:    java Graph < input.txt
  *  Dependencies: ST.java SET.java In.java StdOut.java
  *  Data files:   https://introcs.cs.princeton.edu/45graph/tinyGraph.txt
