@@ -7,6 +7,7 @@ import spark.Response;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
@@ -147,7 +148,89 @@ public class Main {
 		return pelicula[0];
 	}
 	
+	//Metodo que devuelve el menu de Buscar Actor y procesa la busqueda del actor
+	public static String searchActorHTML(Request req,Response resp)throws SQLException {
+		String html = (HEAD 
+				+ "<h3>Encuentra a tu actor favorito</h3>"
+				+ "<p><form action='/buscaActor' method='post'>"
+				+ "Introduce tu actor favorito (Apellido, Nombre): <input type='text' name='actor'>" 
+				+ "<input type='submit' value='Enviar'>"
+				+ "</form></p>" + LINK_MAIN);
+		if(req.requestMethod().equals(("GET"))) {
+			return (html);
+		}else{
+			//Buscamos las Peliculas donde se encuentra el actor requerido
+			String actor = req.queryParams("actor");
+			String actorFilms = "SELECT NombrePeli FROM actuaEn WHERE NombreActor LIKE '" + actor + "%'" ;
+			PreparedStatement preparedStat = conn.prepareStatement(actorFilms);
+			ResultSet st = preparedStat.executeQuery();
+			String listFilms = html + "<hr>"
+					+ "<p>El actor " + actor + " aparece en: "
+					+ "<ul>";
+			if(st.next()) {
+				while(st.next()) {
+					listFilms += "<li>" + st.getString("NombrePeli") + "</li>";
+				}
+			}else {
+				resp.redirect("/errorSearch");
+			}
+			listFilms += "</ul></p> " ;
+			return (listFilms);
+		}
+	}
 	
+	//Metodo informativo para cuando no existe el dato que se introduce
+	public static String errorPost(Request req,Response resp) {
+		return(HEAD
+				+ "<p>Tu busqueda no se encuentra en nuestra base de datos</p>"
+				+ LINK_MAIN);
+	}
+	
+	//Metodo que muestra menu de buscar Pelicula, y procesa sus peticiones
+	public static String searchFilm(Request req,Response resp) throws SQLException {
+		String html = HEAD 
+				+ "<h3>Encuentra tu pelicula y quien formo parte de ella </h3>"
+				+ "<p><form action='/buscaPelicula' method='post'>"
+				+ "Introduce Pelicula: <input type='text' name='pelicula'>" 
+				+ "<input type='submit' value='Enviar'>"
+				+ "</form></p>" + LINK_MAIN;
+		if(req.requestMethod().equals("GET")) {
+			return(html);
+		}else {
+			//Buscamos cuantass peliculas coincide con la peticion
+			String pelicula = req.queryParams("pelicula");
+			
+			//Primero Se Mostrara si hay mas de una pelicula que coincide con nuestra busqueda
+			String filmsCountQuery = "SELECT COUNT(*) AS 'Cuenta' FROM peliculas WHERE Nombre LIKE '%" + pelicula + "%'" ;
+			PreparedStatement preparedStat = conn.prepareStatement(filmsCountQuery);
+			ResultSet st = preparedStat.executeQuery();
+			Integer nfilms = st.getInt("Cuenta");
+			if (nfilms > 1) {
+				String filmsQuery = "SELECT * FROM peliculas WHERE Nombre LIKE '%" + pelicula + "%'";
+				PreparedStatement preparedStat2 = conn.prepareStatement(filmsQuery);
+				ResultSet st2 = preparedStat2.executeQuery();
+				String listadoFilms = "<hr><p>Estas peliculas coinciden con tu busqueda. ¿Cual es la que desea buscar?"
+						+ "<ul>";
+				while(st2.next()) {
+					listadoFilms += "<li>" + st2.getString("Nombre") + "</li>"; 
+				}
+				listadoFilms += "</ul></p>";
+				html += listadoFilms;
+			}else {
+				String filmCastQuery = "SELECT NombreActor FROM actuaEn WHERE NombrePeli LIKE '%" + pelicula + "%'";
+				PreparedStatement preparedStat3 = conn.prepareStatement(filmCastQuery);
+				ResultSet st3 = preparedStat3.executeQuery();
+				String casting = "<hr><p>Estos son los actores que forman parte de '" + pelicula + "' :"
+						+ "<ul>";
+				while(st3.next()) {
+					casting += "<li>" + st3.getString("NombreActor") + "</li>";
+				}
+				casting += "</ul></p>";
+				html += casting;
+			}
+			return(html);
+		}
+	}
 	
 	public static void main (String[] args) {
 		port(getHerokuAssignedPort());
@@ -158,9 +241,14 @@ public class Main {
 			//Recursos de la APP
 			get("/",Main::mainHTML);
 			get("/data",Main::getData);
+			get("/buscaActor",Main::searchActorHTML);
+			post("/buscaActor", Main::searchActorHTML);
+			get("/buscaPelicula",Main::searchFilm);
+			post("/buscaPelicula",Main::searchFilm);
 			
 			//Mensajes De Error
 			get("/error",Main::errorMessage);
+			get("/errorSearch",Main::errorPost);
 			
 		}catch(SQLException | IllegalArgumentException ex){
 			System.out.println("Ha habido un error");
@@ -176,6 +264,6 @@ public class Main {
 	if (processBuilder.environment().get("PORT") != null) {
 	    return Integer.parseInt(processBuilder.environment().get("PORT"));
 	}
-	return 4567; // return default port if heroku-port isn't set (i.e. on localhost)
+	return 4565; // return default port if heroku-port isn't set (i.e. on localhost)
     }
 }
