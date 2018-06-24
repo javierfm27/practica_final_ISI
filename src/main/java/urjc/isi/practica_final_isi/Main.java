@@ -64,7 +64,7 @@ public class Main {
 					+ "primary key(Nombre))");
 			stat.executeUpdate("create table peliculas(Nombre varchar(100),"
 					+ "fecha varchar(4),"
-					+ "primary key(nombre))");
+					+ "primary key(nombre,fecha))");
 			stat.executeUpdate("create table actuaEn(NombreActor varchar(30),"
 					+ "NombrePeli varchar(100),"
 					+ "primary key(NombreActor,NombrePeli),"
@@ -73,29 +73,54 @@ public class Main {
 			
 			//Una vez creadas vamos a introducir lo datos de nuestro fichero a la base de datos.
 			//Hemos optado por suprimir la opcion de que fichero subir, por complejidad y falta de tiempo
-			In fileIn = new In("./data/imdb-data/cast.G.txt");
+			In fileIn = new In("./data/imdb-data/f1.txt");
 			
 			
-		//	while (fileIn.hasNextLine()) {
-				//Obtenemos por linea los datos del .txt
+			while (fileIn.hasNextLine()) {
+				//Obtenemos por linea los datos del .txt0
 				String line = fileIn.readLine();
 				StringTokenizer lineTokens = new StringTokenizer(line,"/");
 				//Primer token es la pelicula
 				String film = lineTokens.nextToken();
 				film = filmAnDate(film);
-				//Siguientes tokens -> Actores. Ahora guardamos los actores y sus relaciones con las peliculas
-				
-		//	}
+				while(lineTokens.hasMoreTokens()) {
+					//Siguientes tokens -> Actores. Ahora guardamos los actores y sus relaciones con las peliculas
+					addActor(film,lineTokens.nextToken());
+				}
+			}
 
 			
 			
 			fileIn.close();
 			resp.redirect("/");
 		}catch(SQLException | IllegalArgumentException ex) {
+			System.out.println(ex.getMessage());
 			resp.redirect("/error");
 		}
 		return("Los datos han sido cargados");
 	}
+	
+	//Inserta Actor en tabla Actores, e inserta la relacion de Pelicula y Actor
+	public static void addActor(String film, String actor) throws SQLException {
+		//Hay que comprobar que dicho actor no este en la base
+		String searchActor = "SELECT * FROM actores WHERE Nombre=?";
+		PreparedStatement pstatSearch = conn.prepareStatement(searchActor);
+		pstatSearch.setString(1, actor);
+		if(!pstatSearch.execute()) { 
+			//Insertamos el actor
+			String insertActor = "INSERT INTO actores(Nombre) VALUES (?)";
+			PreparedStatement pstat = conn.prepareStatement(insertActor);
+			pstat.setString(1, actor);
+			pstat.executeUpdate();
+		}
+		//Insertamos la relacion
+		String insertActuaEn = "INSERT INTO actuaEn(NombreActor, NombrePeli) VALUES (?,?)";
+		PreparedStatement pstat2 = conn.prepareStatement(insertActuaEn);
+		pstat2.setString(1, actor);
+		pstat2.setString(2, film);
+		pstat2.executeUpdate();
+	}
+	
 	
 	//Separa la pelicula en pelicula y Año de produccion y la inserta en la tabla, y devuelve la pelicula para usos futuros
 	public static String filmAnDate(String film) throws SQLException {
@@ -129,6 +154,8 @@ public class Main {
 			//Recursos de la APP
 			get("/",Main::mainHTML);
 			get("/data",Main::getData);
+			
+			//Mensajes De Error
 			get("/error",Main::errorMessage);
 			
 		}catch(SQLException | IllegalArgumentException ex){
@@ -145,6 +172,6 @@ public class Main {
 	if (processBuilder.environment().get("PORT") != null) {
 	    return Integer.parseInt(processBuilder.environment().get("PORT"));
 	}
-	return 4560; // return default port if heroku-port isn't set (i.e. on localhost)
+	return 4567; // return default port if heroku-port isn't set (i.e. on localhost)
     }
 }
