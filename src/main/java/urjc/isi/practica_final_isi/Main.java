@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
-
+import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 import javax.servlet.MultipartConfigElement;
@@ -64,27 +64,28 @@ public class Main {
 					+ "primary key(Nombre))");
 			stat.executeUpdate("create table peliculas(Nombre varchar(100),"
 					+ "fecha varchar(4),"
-					+ "primary key(nombre,fecha))");
+					+ "primary key(nombre))");
 			stat.executeUpdate("create table actuaEn(NombreActor varchar(30),"
 					+ "NombrePeli varchar(100),"
-					+ "fechaPeli varchar(4),"
-					+ "primary key(NombreActor,NombrePeli,fechaPeli),"
+					+ "primary key(NombreActor,NombrePeli),"
 					+ "foreign key(NombreActor) references actores(Nombre),"
-					+ "foreign key(NombrePeli) references peliculas(Nombre),"
-					+ "foreign key(fechaPeli) references peliculas(fecha))");
+					+ "foreign key(NombrePeli) references peliculas(Nombre))");
 			
 			//Una vez creadas vamos a introducir lo datos de nuestro fichero a la base de datos.
 			//Hemos optado por suprimir la opcion de que fichero subir, por complejidad y falta de tiempo
 			In fileIn = new In("./data/imdb-data/cast.G.txt");
 			
 			
-			
-			//Obtenemos por linea los datos del .txt
-			String line = fileIn.readLine();
-			StringTokenizer lineTokens = new StringTokenizer(line,"/");
-			//Primer token es la pelicula
-			String film = lineTokens.nextToken();
-			filmAnDate(film);
+		//	while (fileIn.hasNextLine()) {
+				//Obtenemos por linea los datos del .txt
+				String line = fileIn.readLine();
+				StringTokenizer lineTokens = new StringTokenizer(line,"/");
+				//Primer token es la pelicula
+				String film = lineTokens.nextToken();
+				film = filmAnDate(film);
+				//Siguientes tokens -> Actores. Ahora guardamos los actores y sus relaciones con las peliculas
+				
+		//	}
 
 			
 			
@@ -96,10 +97,10 @@ public class Main {
 		return("Los datos han sido cargados");
 	}
 	
-	
-	public static String[] filmAnDate(String film) {
+	//Separa la pelicula en pelicula y Año de produccion y la inserta en la tabla, y devuelve la pelicula para usos futuros
+	public static String filmAnDate(String film) throws SQLException {
 		String[] filmSplit = film.split(" ");
-		String date;
+		String date = "";
 		for (String x : filmSplit) {
 			if(x.matches(".\\d{4}.")) {
 				date = x;
@@ -108,7 +109,13 @@ public class Main {
 			
 		}
 		String pelicula[] = film.split(".\\d{4}.");
-		return [pelicula[0],date];
+		//Insertamos pelicula
+		String insertFilm = "INSERT INTO peliculas(Nombre,fecha) VALUES (?,?)";
+		PreparedStatement preparedStatem = conn.prepareStatement(insertFilm);
+		preparedStatem.setString(1, pelicula[0]);
+		preparedStatem.setString(2, date);
+		preparedStatem.executeUpdate();
+		return pelicula[0];
 	}
 	
 	
@@ -138,6 +145,6 @@ public class Main {
 	if (processBuilder.environment().get("PORT") != null) {
 	    return Integer.parseInt(processBuilder.environment().get("PORT"));
 	}
-	return 4567; // return default port if heroku-port isn't set (i.e. on localhost)
+	return 4560; // return default port if heroku-port isn't set (i.e. on localhost)
     }
 }
