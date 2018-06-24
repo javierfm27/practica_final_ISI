@@ -34,8 +34,12 @@ public class Main {
 	public static String mainHTML(Request req,Response resp) {
 		return (HEAD
 				+ "<br>"
-				+ "<p> Aplicación Donde a partir de los datos de IMDB, podemos hacer varias cosas<p>"
+				+ "<p> Aplicación Donde a partir de los datos de IMDB, se ofrece: <p>"
 				+ "<br>"
+				+ "<ul>"
+				+ "<li><a href='/buscaActor'>Buscar un actor.</a></li>"
+				+ "<li><a href='/buscaPelicula'>Buscar una pelicula.</a></li>"
+				+ "</ul>"
 				+ "-> Para cargar los datos <a href='/data'> Haz click aqui</a>");
 	}
 	
