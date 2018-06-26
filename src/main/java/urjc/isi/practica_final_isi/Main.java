@@ -27,8 +27,9 @@ public class Main {
 	
 	//Aqui tendremos lo que siempre ira en nuestro html, como el titulo de la APP que se mantendra siempre, o podemos incluir
 	//un elemento head con el elemento style, definiendo el fondo de la aplicacion por ejemplo
-	private static final String HEAD = "<h1 style='color: red'>ANGELA JAVI APP</h1>";
-	private static final String LINK_MAIN = "<span><a href='/'>Volver al Inicio</a></span>";
+	private static final String HEAD = "<head><style>footer{position: absolute; bottom: 0; margin-bottom: 3em;} </style></head><h1 style='color: red'>ANGELA JAVI APP</h1>";
+	private static final String LINK_MAIN = "<span><a href='/main'>Volver al Inicio</a></span>";
+	private static final String FOOTER = "<footer>© Developed by j.fernandezmor@alumnos.urjc.es & a.vargasa@alumnos.urjc.es</footer>";
 	
 	
 	//Metodo del main del HTML
@@ -40,15 +41,30 @@ public class Main {
 				+ "<ul>"
 				+ "<li><a href='/buscaActor'>Buscar un actor.</a></li>"
 				+ "<li><a href='/buscaPelicula'>Buscar una pelicula.</a></li>"
+				+ "<li><a href='/buscaAño'>Buscar por año.</a></li>"
 				+ "</ul>"
-				+ "-> Para cargar los datos <a href='/data'> Haz click aqui</a>");
+				+ "-> Para cargar los datos <a href='/data'> Haz click aqui</a>")
+				+ FOOTER;
 	}
 	
+	//Metodo del main con los datos cargados
+		public static String mainData(Request req,Response resp) {
+			return (HEAD
+					+ "<br>"
+					+ "<p> Aplicación Donde a partir de los datos de IMDB, se ofrece: <p>"
+					+ "<br>"
+					+ "<ul>"
+					+ "<li><a href='/buscaActor'>Buscar un actor.</a></li>"
+					+ "<li><a href='/buscaPelicula'>Buscar una pelicula.</a></li>"
+					+ "<li><a href='/buscaAño'>Buscar por año.</a></li>"
+					+ "</ul>")
+					+ FOOTER;
+		}
 	
 	//Metodo que sirve el error
 	public static String errorMessage(Request req,Response resp) {
 		return(HEAD
-				+ "<p> Ha habido un error con la carga de Datos " + LINK_MAIN + "</p>");
+				+ "<p> Ha habido un error con la carga de Datos " + LINK_MAIN + "</p>" + FOOTER);
 	}
 	
 	//Metodo que se encargara de crear una base de datos con los datos cargados
@@ -99,7 +115,7 @@ public class Main {
 			
 			
 			fileIn.close();
-			resp.redirect("/");
+			resp.redirect("/main");
 		}catch(SQLException | IllegalArgumentException ex) {
 			System.out.println(ex.getMessage());
 			resp.redirect("/error");
@@ -117,13 +133,12 @@ public class Main {
 		Integer nactor = st.getInt("Cuenta");
 		
 		if(nactor == 0) {
-			System.
 			String insertActor = "INSERT INTO actores(Nombre) VALUES (?)";
 			PreparedStatement pstat = conn.prepareStatement(insertActor);
 			pstat.setString(1, actor);
 			pstat.executeUpdate();
 		}
-		System.out.println("HOLA 2");
+		
 		//Insertamos la relacion
 		String insertActuaEn = "INSERT INTO actuaEn(NombreActor, NombrePeli) VALUES (?,?)";
 		PreparedStatement pstat2 = conn.prepareStatement(insertActuaEn);
@@ -163,7 +178,7 @@ public class Main {
 				+ "<input type='submit' value='Enviar'>"
 				+ "</form></p>" + LINK_MAIN);
 		if(req.requestMethod().equals(("GET"))) {
-			return (html);
+			html += FOOTER;
 		}else{
 			//Buscamos cuantos actores hay
 			String actor = req.queryParams("actor");
@@ -173,7 +188,6 @@ public class Main {
 			PreparedStatement preparedStat = conn.prepareStatement(actorsCountQuery);
 			ResultSet st = preparedStat.executeQuery();
 			Integer nactors = st.getInt("Cuenta");
-			System.out.println("Contamos-> " + nactors);
 			
 			if (nactors > 1) {
 				String actorsQuery = "SELECT * FROM actores WHERE Nombre LIKE '%" + actor + "%'";
@@ -186,6 +200,7 @@ public class Main {
 				}
 				listadoActores += "</ul></p>";
 				html += listadoActores;
+				html += FOOTER;
 			}else {
 				String ActorCastQuery = "SELECT NombrePeli FROM actuaEn WHERE NombreActor LIKE '%" + actor + "%'";
 				PreparedStatement preparedStat3 = conn.prepareStatement(ActorCastQuery);
@@ -197,34 +212,62 @@ public class Main {
 				}
 				peliculas += "</ul></p>";
 				html += peliculas;
+				html += FOOTER;
+			}			
+		}
+		return(html);
+	}
+	
+	//Metodo que devuelve el menu de Buscar Año y procesa la busqueda de peliculas estrenadas ese año
+	public static String searchYearHTML(Request req,Response resp)throws SQLException {
+		String html = (HEAD 
+				+ "<h3>¿Te acuerdas del año de estreno de tu película y no de su nombre? Introduce el año y encuéntrala </h3>"
+				+ "<p><form action='/buscaAño' method='post'>"
+				+ "Introduce el año de estreno: <input type='text' name='año'>" 
+				+ "<input type='submit' value='Enviar'>"
+				+ "</form></p>" + LINK_MAIN);
+		if(req.requestMethod().equals(("GET"))) {
+			html += FOOTER;
+			return (html);
+		}else{
+			//Obtenemos el año
+			String año = req.queryParams("año");
+			
+			try {
+			//Buscamos las películas estrenadas en ese año
+			String countYear = "SELECT COUNT (*) AS 'Cuenta' FROM peliculas WHERE fecha LIKE '%" + año + "%'";
+			PreparedStatement preparedStat2 = conn.prepareStatement(countYear);
+			ResultSet st2 = preparedStat2.executeQuery();
+			Integer nfilms = st2.getInt("Cuenta");
+			if (nfilms > 0) {
+				String selectYear = "SELECT Nombre FROM peliculas WHERE fecha LIKE '%" + año + "%'";
+				PreparedStatement preparedStat = conn.prepareStatement(selectYear);
+				ResultSet st = preparedStat.executeQuery();
+				String listadoPelis = "<hr><p>Estas películas fueron estrenadas en " + año + "<ul>";
+				while(st.next()) {
+					listadoPelis += "<li>" + st.getString("Nombre") + "</li>"; 
+				}
+				listadoPelis += "</ul></p>";
+				html += listadoPelis;
+				html += FOOTER;
+			}else {
+				html += "<hr>Este año no se encuentra en la base de datos. Por favor, pruebe con un nuevo año de búsqueda.";
+				html += FOOTER;
 			}
 			return(html);
-			
-//			//Buscamos las Peliculas donde se encuentra el actor requerido
-//			String actor = req.queryParams("actor");
-//			String actorFilms = "SELECT NombrePeli FROM actuaEn WHERE NombreActor LIKE '%" + actor + "%'" ;
-//			PreparedStatement preparedStat = conn.prepareStatement(actorFilms);
-//			ResultSet st = preparedStat.executeQuery();
-//			String listFilms = html + "<hr>"
-//					+ "<p>El actor " + actor + " aparece en: "
-//					+ "<ul>";
-//			if(st.next()) {
-//				listFilms += "<li>" + st.getString("NombrePeli") + "</li>";
-//				while(st.next()) {
-//					listFilms += "<li>" + st.getString("NombrePeli") + "</li>";
-//				}
-//			}else {
-//				resp.redirect("/errorSearch");
-//			}
-//			listFilms += "</ul></p> " ;
-//			return (listFilms);
+			}catch (Exception e) {
+				System.out.println(e.getMessage());
+				return "ERROR";
+			}
 		}
+
 	}
+
 	
 	//Metodo informativo para cuando no existe el dato que se introduce
 	public static String errorPost(Request req,Response resp) {
 		return(HEAD
-				+ "<p>Tu busqueda no se encuentra en nuestra base de datos</p>"
+				+ "<p>Tu búsqueda no se encuentra en nuestra base de datos.</p>"
 				+ LINK_MAIN);
 	}
 	
@@ -237,6 +280,7 @@ public class Main {
 				+ "<input type='submit' value='Enviar'>"
 				+ "</form></p>" + LINK_MAIN;
 		if(req.requestMethod().equals("GET")) {
+			html += FOOTER;
 			return(html);
 		}else {
 			//Buscamos cuantass peliculas coincide con la peticion
@@ -247,7 +291,6 @@ public class Main {
 			PreparedStatement preparedStat = conn.prepareStatement(filmsCountQuery);
 			ResultSet st = preparedStat.executeQuery();
 			Integer nfilms = st.getInt("Cuenta");
-			System.out.println("Contamos -> " + nfilms);
 			if (nfilms > 1) {
 				String filmsQuery = "SELECT * FROM peliculas WHERE Nombre LIKE '%" + pelicula + "%'";
 				PreparedStatement preparedStat2 = conn.prepareStatement(filmsQuery);
@@ -271,6 +314,7 @@ public class Main {
 				casting += "</ul></p>";
 				html += casting;
 			}
+			html += FOOTER;
 			return(html);
 		}
 	}
@@ -283,11 +327,15 @@ public class Main {
 			
 			//Recursos de la APP
 			get("/",Main::mainHTML);
+			get("/main",Main::mainData);
 			get("/data",Main::getData);
 			get("/buscaActor",Main::searchActorHTML);
 			post("/buscaActor", Main::searchActorHTML);
 			get("/buscaPelicula",Main::searchFilm);
 			post("/buscaPelicula",Main::searchFilm);
+			get("/buscaAño", Main::searchYearHTML);
+			post("/buscaAño", Main::searchYearHTML);
+
 			
 			//Mensajes De Error
 			get("/error",Main::errorMessage);
@@ -307,6 +355,6 @@ public class Main {
 	if (processBuilder.environment().get("PORT") != null) {
 	    return Integer.parseInt(processBuilder.environment().get("PORT"));
 	}
-	return 4565; // return default port if heroku-port isn't set (i.e. on localhost)
+	return 4560; // return default port if heroku-port isn't set (i.e. on localhost)
     }
 }
