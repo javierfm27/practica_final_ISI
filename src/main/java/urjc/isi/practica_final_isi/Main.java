@@ -62,6 +62,7 @@ public class Main {
 			stat.executeUpdate("drop table if exists actores");
 			stat.executeUpdate("drop table if exists peliculas");
 			stat.executeUpdate("drop table if exists actuaEn");
+
 			
 			//Procedemos a crear nuestra base de Datos, basandonos en un modelo de Entidad Relacion
 			//Observando el diagrama creado para nuestra APP, tendremos las siguientes Tablas
@@ -75,11 +76,12 @@ public class Main {
 					+ "primary key(NombreActor,NombrePeli),"
 					+ "foreign key(NombreActor) references actores(Nombre),"
 					+ "foreign key(NombrePeli) references peliculas(Nombre))");
+
 			
 			//Una vez creadas vamos a introducir lo datos de nuestro fichero a la base de datos.
 			//Hemos optado por suprimir la opcion de que fichero subir, por complejidad y falta de tiempo
 			In fileIn = new In("./data/imdb-data/f1.txt");
-			
+
 			
 			while (fileIn.hasNextLine()) {
 				//Obtenemos por linea los datos del .txt0
@@ -108,16 +110,20 @@ public class Main {
 	//Inserta Actor en tabla Actores, e inserta la relacion de Pelicula y Actor
 	public static void addActor(String film, String actor) throws SQLException {
 		//Hay que comprobar que dicho actor no este en la base
-		String searchActor = "SELECT * FROM actores WHERE Nombre=?";
+		String searchActor = "SELECT COUNT (*) AS 'Cuenta' FROM actores WHERE Nombre=?";
 		PreparedStatement pstatSearch = conn.prepareStatement(searchActor);
 		pstatSearch.setString(1, actor);
-		if(!pstatSearch.execute()) { 
-			//Insertamos el actor
+		ResultSet st = pstatSearch.executeQuery();
+		Integer nactor = st.getInt("Cuenta");
+		
+		if(nactor == 0) {
+			System.
 			String insertActor = "INSERT INTO actores(Nombre) VALUES (?)";
 			PreparedStatement pstat = conn.prepareStatement(insertActor);
 			pstat.setString(1, actor);
 			pstat.executeUpdate();
 		}
+		System.out.println("HOLA 2");
 		//Insertamos la relacion
 		String insertActuaEn = "INSERT INTO actuaEn(NombreActor, NombrePeli) VALUES (?,?)";
 		PreparedStatement pstat2 = conn.prepareStatement(insertActuaEn);
@@ -159,23 +165,59 @@ public class Main {
 		if(req.requestMethod().equals(("GET"))) {
 			return (html);
 		}else{
-			//Buscamos las Peliculas donde se encuentra el actor requerido
+			//Buscamos cuantos actores hay
 			String actor = req.queryParams("actor");
-			String actorFilms = "SELECT NombrePeli FROM actuaEn WHERE NombreActor LIKE '" + actor + "%'" ;
-			PreparedStatement preparedStat = conn.prepareStatement(actorFilms);
+			
+			//Primero Se Mostrara si hay mas de una actor que coincide con nuestra busqueda
+			String actorsCountQuery = "SELECT COUNT(*) AS 'Cuenta' FROM actores WHERE Nombre LIKE '%" + actor + "%'" ;
+			PreparedStatement preparedStat = conn.prepareStatement(actorsCountQuery);
 			ResultSet st = preparedStat.executeQuery();
-			String listFilms = html + "<hr>"
-					+ "<p>El actor " + actor + " aparece en: "
-					+ "<ul>";
-			if(st.next()) {
-				while(st.next()) {
-					listFilms += "<li>" + st.getString("NombrePeli") + "</li>";
+			Integer nactors = st.getInt("Cuenta");
+			System.out.println("Contamos-> " + nactors);
+			
+			if (nactors > 1) {
+				String actorsQuery = "SELECT * FROM actores WHERE Nombre LIKE '%" + actor + "%'";
+				PreparedStatement preparedStat2 = conn.prepareStatement(actorsQuery);
+				ResultSet st2 = preparedStat2.executeQuery();
+				String listadoActores = "<hr><p>Estos Actores coinciden con tu búsqueda. ¿Cuál es el/la que desea buscar?"
+						+ "<ul>";
+				while(st2.next()) {
+					listadoActores += "<li>" + st2.getString("Nombre") + "</li>"; 
 				}
+				listadoActores += "</ul></p>";
+				html += listadoActores;
 			}else {
-				resp.redirect("/errorSearch");
+				String ActorCastQuery = "SELECT NombrePeli FROM actuaEn WHERE NombreActor LIKE '%" + actor + "%'";
+				PreparedStatement preparedStat3 = conn.prepareStatement(ActorCastQuery);
+				ResultSet st3 = preparedStat3.executeQuery();
+				String peliculas = "<hr><p>Estos son las películas en las que aparece '" + actor + "' :"
+						+ "<ul>";
+				while(st3.next()) {
+					peliculas += "<li>" + st3.getString("NombrePeli") + "</li>";
+				}
+				peliculas += "</ul></p>";
+				html += peliculas;
 			}
-			listFilms += "</ul></p> " ;
-			return (listFilms);
+			return(html);
+			
+//			//Buscamos las Peliculas donde se encuentra el actor requerido
+//			String actor = req.queryParams("actor");
+//			String actorFilms = "SELECT NombrePeli FROM actuaEn WHERE NombreActor LIKE '%" + actor + "%'" ;
+//			PreparedStatement preparedStat = conn.prepareStatement(actorFilms);
+//			ResultSet st = preparedStat.executeQuery();
+//			String listFilms = html + "<hr>"
+//					+ "<p>El actor " + actor + " aparece en: "
+//					+ "<ul>";
+//			if(st.next()) {
+//				listFilms += "<li>" + st.getString("NombrePeli") + "</li>";
+//				while(st.next()) {
+//					listFilms += "<li>" + st.getString("NombrePeli") + "</li>";
+//				}
+//			}else {
+//				resp.redirect("/errorSearch");
+//			}
+//			listFilms += "</ul></p> " ;
+//			return (listFilms);
 		}
 	}
 	
@@ -205,6 +247,7 @@ public class Main {
 			PreparedStatement preparedStat = conn.prepareStatement(filmsCountQuery);
 			ResultSet st = preparedStat.executeQuery();
 			Integer nfilms = st.getInt("Cuenta");
+			System.out.println("Contamos -> " + nfilms);
 			if (nfilms > 1) {
 				String filmsQuery = "SELECT * FROM peliculas WHERE Nombre LIKE '%" + pelicula + "%'";
 				PreparedStatement preparedStat2 = conn.prepareStatement(filmsQuery);
