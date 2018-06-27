@@ -86,7 +86,7 @@ public class Graph {
     }
 
    /**
-     * Returns the number of edges in this graph.
+     * Returns the number of edges in this graph
      *
      * @return the number of edges in this graph
      */
