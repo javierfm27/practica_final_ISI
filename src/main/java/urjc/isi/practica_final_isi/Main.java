@@ -27,7 +27,7 @@ public class Main {
 	
 	//Aqui tendremos lo que siempre ira en nuestro html, como el titulo de la APP que se mantendra siempre, o podemos incluir
 	//un elemento head con el elemento style, definiendo el fondo de la aplicacion por ejemplo
-	private static final String HEAD = "<head><style>footer{position: absolute; bottom: 0; margin-bottom: 3em;} </style></head><h1 style='color: red'>ANGELA JAVI APP</h1>";
+	private static final String HEAD = "<head><style>footer{position: absolute; bottom: 0; margin-bottom: 3em;} </style></head><h1 style='color: red'>ÁNGELA JAVI APP</h1>";
 	private static final String LINK_MAIN = "<span><a href='/main'>Volver al Inicio</a></span>";
 	private static final String FOOTER = "<footer>© Developed by j.fernandezmor@alumnos.urjc.es & a.vargasa@alumnos.urjc.es</footer>";
 	
@@ -36,14 +36,14 @@ public class Main {
 	public static String mainHTML(Request req,Response resp) {
 		return (HEAD
 				+ "<br>"
-				+ "<p> Aplicación Donde a partir de los datos de IMDB, se ofrece: <p>"
+				+ "<p> Aplicación donde a partir de los datos de IMDB, se ofrece: <p>"
 				+ "<br>"
 				+ "<ul>"
 				+ "<li><a href='/buscaActor'>Buscar un actor.</a></li>"
-				+ "<li><a href='/buscaPelicula'>Buscar una pelicula.</a></li>"
+				+ "<li><a href='/buscaPelicula'>Buscar una película.</a></li>"
 				+ "<li><a href='/buscaAño'>Buscar por año.</a></li>"
 				+ "</ul>"
-				+ "-> Para cargar los datos <a href='/data'> Haz click aqui</a>")
+				+ "-> Para cargar los datos <a href='/data'> Haz click aquí</a>")
 				+ FOOTER;
 	}
 	
@@ -51,11 +51,11 @@ public class Main {
 		public static String mainData(Request req,Response resp) {
 			return (HEAD
 					+ "<br>"
-					+ "<p> Aplicación Donde a partir de los datos de IMDB, se ofrece: <p>"
+					+ "<p> Aplicación donde a partir de los datos de IMDB, se ofrece: <p>"
 					+ "<br>"
 					+ "<ul>"
 					+ "<li><a href='/buscaActor'>Buscar un actor.</a></li>"
-					+ "<li><a href='/buscaPelicula'>Buscar una pelicula.</a></li>"
+					+ "<li><a href='/buscaPelicula'>Buscar una película.</a></li>"
 					+ "<li><a href='/buscaAño'>Buscar por año.</a></li>"
 					+ "</ul>")
 					+ FOOTER;
@@ -96,7 +96,7 @@ public class Main {
 			
 			//Una vez creadas vamos a introducir lo datos de nuestro fichero a la base de datos.
 			//Hemos optado por suprimir la opcion de que fichero subir, por complejidad y falta de tiempo
-			In fileIn = new In("./data/imdb-data/f1.txt");
+			In fileIn = new In("./data/imdb-data/cast.G.txt");
 
 			
 			while (fileIn.hasNextLine()) {
@@ -105,10 +105,10 @@ public class Main {
 				StringTokenizer lineTokens = new StringTokenizer(line,"/");
 				//Primer token es la pelicula
 				String film = lineTokens.nextToken();
-				film = filmAnDate(film);
+				film = filmAnDate(film,conn);
 				while(lineTokens.hasMoreTokens()) {
 					//Siguientes tokens -> Actores. Ahora guardamos los actores y sus relaciones con las peliculas
-					addActor(film,lineTokens.nextToken());
+					addActor(film,lineTokens.nextToken(),conn);
 				}
 			}
 
@@ -116,7 +116,7 @@ public class Main {
 			
 			fileIn.close();
 			resp.redirect("/main");
-		}catch(SQLException | IllegalArgumentException ex) {
+		}catch(SQLException | IllegalArgumentException | ArrayIndexOutOfBoundsException ex) {
 			System.out.println(ex.getMessage());
 			resp.redirect("/error");
 		}
@@ -124,7 +124,7 @@ public class Main {
 	}
 	
 	//Inserta Actor en tabla Actores, e inserta la relacion de Pelicula y Actor
-	public static void addActor(String film, String actor) throws SQLException {
+	public static void addActor(String film, String actor,Connection conn) throws SQLException {
 		//Hay que comprobar que dicho actor no este en la base
 		String searchActor = "SELECT COUNT (*) AS 'Cuenta' FROM actores WHERE Nombre=?";
 		PreparedStatement pstatSearch = conn.prepareStatement(searchActor);
@@ -149,7 +149,7 @@ public class Main {
 	
 	
 	//Separa la pelicula en pelicula y Año de produccion y la inserta en la tabla, y devuelve la pelicula para usos futuros
-	public static String filmAnDate(String film) throws SQLException {
+	public static String filmAnDate(String film,Connection conn) throws SQLException {
 		String[] filmSplit = film.split(" ");
 		String date = "";
 		for (String x : filmSplit) {
@@ -169,6 +169,40 @@ public class Main {
 		return pelicula[0];
 	}
 	
+	public static String selectActor(String actor, Connection conn) throws SQLException{
+		//Primero Se Mostrara si hay mas de una actor que coincide con nuestra busqueda
+		String actorsCountQuery = "SELECT COUNT(*) AS 'Cuenta' FROM actores WHERE Nombre LIKE '%" + actor + "%'" ;
+		PreparedStatement preparedStat = conn.prepareStatement(actorsCountQuery);
+		ResultSet st = preparedStat.executeQuery();
+		Integer nactors = st.getInt("Cuenta");
+		
+		if (nactors > 1) {
+			String actorsQuery = "SELECT * FROM actores WHERE Nombre LIKE '%" + actor + "%'";
+			PreparedStatement preparedStat2 = conn.prepareStatement(actorsQuery);
+			ResultSet st2 = preparedStat2.executeQuery();
+			String listadoActores = "<hr><p>Estos actores coinciden con tu búsqueda. ¿Cuál es el/la que desea buscar?"
+					+ "<ul>";
+			while(st2.next()) {
+				listadoActores += "<li>" + st2.getString("Nombre") + "</li>"; 
+			}
+			listadoActores += "</ul></p>";
+			return(listadoActores);
+		}else if (nactors == 0) {
+			return("<hr>'" + actor + "' no se encuentra en la base de datos.Introduzca uno válido/a.");
+		}else {
+			String ActorCastQuery = "SELECT NombrePeli FROM actuaEn WHERE NombreActor LIKE '%" + actor + "%'";
+			PreparedStatement preparedStat3 = conn.prepareStatement(ActorCastQuery);
+			ResultSet st3 = preparedStat3.executeQuery();
+			String peliculas = "<hr><p>Estas son las películas en las que aparece '" + actor + "' :"
+					+ "<ul>";
+			while(st3.next()) {
+				peliculas += "<li>" + st3.getString("NombrePeli") + "</li>";
+			}
+			peliculas += "</ul></p>";
+			return(peliculas);
+		}
+	}
+	
 	//Metodo que devuelve el menu de Buscar Actor y procesa la busqueda del actor
 	public static String searchActorHTML(Request req,Response resp)throws SQLException {
 		String html = (HEAD 
@@ -182,41 +216,32 @@ public class Main {
 		}else{
 			//Buscamos cuantos actores hay
 			String actor = req.queryParams("actor");
-			
-			//Primero Se Mostrara si hay mas de una actor que coincide con nuestra busqueda
-			String actorsCountQuery = "SELECT COUNT(*) AS 'Cuenta' FROM actores WHERE Nombre LIKE '%" + actor + "%'" ;
-			PreparedStatement preparedStat = conn.prepareStatement(actorsCountQuery);
-			ResultSet st = preparedStat.executeQuery();
-			Integer nactors = st.getInt("Cuenta");
-			
-			if (nactors > 1) {
-				String actorsQuery = "SELECT * FROM actores WHERE Nombre LIKE '%" + actor + "%'";
-				PreparedStatement preparedStat2 = conn.prepareStatement(actorsQuery);
-				ResultSet st2 = preparedStat2.executeQuery();
-				String listadoActores = "<hr><p>Estos Actores coinciden con tu búsqueda. ¿Cuál es el/la que desea buscar?"
-						+ "<ul>";
-				while(st2.next()) {
-					listadoActores += "<li>" + st2.getString("Nombre") + "</li>"; 
-				}
-				listadoActores += "</ul></p>";
-				html += listadoActores;
-				html += FOOTER;
-			}else {
-				String ActorCastQuery = "SELECT NombrePeli FROM actuaEn WHERE NombreActor LIKE '%" + actor + "%'";
-				PreparedStatement preparedStat3 = conn.prepareStatement(ActorCastQuery);
-				ResultSet st3 = preparedStat3.executeQuery();
-				String peliculas = "<hr><p>Estos son las películas en las que aparece '" + actor + "' :"
-						+ "<ul>";
-				while(st3.next()) {
-					peliculas += "<li>" + st3.getString("NombrePeli") + "</li>";
-				}
-				peliculas += "</ul></p>";
-				html += peliculas;
-				html += FOOTER;
-			}			
+			html += selectActor(actor, conn) + FOOTER;
 		}
 		return(html);
 	}
+	
+	public static String selectYear(String año, Connection conn) throws SQLException {
+		//Buscamos las películas estrenadas en ese año
+		String countYear = "SELECT COUNT (*) AS 'Cuenta' FROM peliculas WHERE fecha LIKE '%" + año + "%'";
+		PreparedStatement preparedStat2 = conn.prepareStatement(countYear);
+		ResultSet st2 = preparedStat2.executeQuery();
+		Integer nfilms = st2.getInt("Cuenta");
+		if (nfilms > 0) {
+			String selectYear = "SELECT Nombre FROM peliculas WHERE fecha LIKE '%" + año + "%'";
+			PreparedStatement preparedStat = conn.prepareStatement(selectYear);
+			ResultSet st = preparedStat.executeQuery();
+			String listadoPelis = "<hr><p>Estas películas fueron estrenadas en " + año + "<ul>";
+			while(st.next()) {
+				listadoPelis += "<li>" + st.getString("Nombre") + "</li>"; 
+			}
+			listadoPelis += "</ul></p>";
+			return(listadoPelis);
+		}else {
+			return("<hr>Este año no se encuentra en la base de datos. Por favor, pruebe con un nuevo año de búsqueda.");
+		}
+	}
+	
 	
 	//Metodo que devuelve el menu de Buscar Año y procesa la busqueda de peliculas estrenadas ese año
 	public static String searchYearHTML(Request req,Response resp)throws SQLException {
@@ -232,33 +257,8 @@ public class Main {
 		}else{
 			//Obtenemos el año
 			String año = req.queryParams("año");
-			
-			try {
-			//Buscamos las películas estrenadas en ese año
-			String countYear = "SELECT COUNT (*) AS 'Cuenta' FROM peliculas WHERE fecha LIKE '%" + año + "%'";
-			PreparedStatement preparedStat2 = conn.prepareStatement(countYear);
-			ResultSet st2 = preparedStat2.executeQuery();
-			Integer nfilms = st2.getInt("Cuenta");
-			if (nfilms > 0) {
-				String selectYear = "SELECT Nombre FROM peliculas WHERE fecha LIKE '%" + año + "%'";
-				PreparedStatement preparedStat = conn.prepareStatement(selectYear);
-				ResultSet st = preparedStat.executeQuery();
-				String listadoPelis = "<hr><p>Estas películas fueron estrenadas en " + año + "<ul>";
-				while(st.next()) {
-					listadoPelis += "<li>" + st.getString("Nombre") + "</li>"; 
-				}
-				listadoPelis += "</ul></p>";
-				html += listadoPelis;
-				html += FOOTER;
-			}else {
-				html += "<hr>Este año no se encuentra en la base de datos. Por favor, pruebe con un nuevo año de búsqueda.";
-				html += FOOTER;
-			}
+			html += selectYear(año, conn) + FOOTER;
 			return(html);
-			}catch (Exception e) {
-				System.out.println(e.getMessage());
-				return "ERROR";
-			}
 		}
 
 	}
@@ -271,12 +271,48 @@ public class Main {
 				+ LINK_MAIN);
 	}
 	
+	
+	public static String selectFilm(String pelicula,Connection conn) throws SQLException {
+		//Primero Se Mostrara si hay mas de una pelicula que coincide con nuestra busqueda
+		String filmsCountQuery = "SELECT COUNT(*) AS 'Cuenta' FROM peliculas WHERE Nombre LIKE '%" + pelicula + "%'" ;
+		PreparedStatement preparedStat = conn.prepareStatement(filmsCountQuery);
+		ResultSet st = preparedStat.executeQuery();
+		Integer nfilms = st.getInt("Cuenta");
+		if (nfilms > 1) {
+			String filmsQuery = "SELECT * FROM peliculas WHERE Nombre LIKE '%" + pelicula + "%'";
+			PreparedStatement preparedStat2 = conn.prepareStatement(filmsQuery);
+			ResultSet st2 = preparedStat2.executeQuery();
+			String listadoFilms = "<hr><p>Estas películas coinciden con tu búsqueda. ¿Cuál es la que desea buscar?"
+					+ "<ul>";
+			while(st2.next()) {
+				listadoFilms += "<li>" + st2.getString("Nombre") + "</li>"; 
+			}
+			listadoFilms += "</ul></p>";
+			return (listadoFilms);
+		}else if (nfilms == 0) {
+			return("<p>'" + pelicula + "' no se encuentra en la base de datos. Introduzca una nueva<p>");
+		}else {
+			String filmCastQuery = "SELECT NombreActor FROM actuaEn WHERE NombrePeli LIKE '%" + pelicula + "%'";
+			PreparedStatement preparedStat3 = conn.prepareStatement(filmCastQuery);
+			ResultSet st3 = preparedStat3.executeQuery();
+			String casting = "<hr><p>Estos son los actores que forman parte de '" + pelicula + "' :"
+					+ "<ul>";
+			while(st3.next()) {
+				casting += "<li>" + st3.getString("NombreActor") + "</li>";
+			}
+			casting += "</ul></p>";
+			return (casting);
+	
+		}
+	}
+	
+	
 	//Metodo que muestra menu de buscar Pelicula, y procesa sus peticiones
 	public static String searchFilm(Request req,Response resp) throws SQLException {
 		String html = HEAD 
-				+ "<h3>Encuentra tu pelicula y quien formo parte de ella </h3>"
+				+ "<h3>Encuentra tu película y quién formó parte de ella </h3>"
 				+ "<p><form action='/buscaPelicula' method='post'>"
-				+ "Introduce Pelicula: <input type='text' name='pelicula'>" 
+				+ "Introduce Película: <input type='text' name='pelicula'>" 
 				+ "<input type='submit' value='Enviar'>"
 				+ "</form></p>" + LINK_MAIN;
 		if(req.requestMethod().equals("GET")) {
@@ -285,45 +321,22 @@ public class Main {
 		}else {
 			//Buscamos cuantass peliculas coincide con la peticion
 			String pelicula = req.queryParams("pelicula");
-			
-			//Primero Se Mostrara si hay mas de una pelicula que coincide con nuestra busqueda
-			String filmsCountQuery = "SELECT COUNT(*) AS 'Cuenta' FROM peliculas WHERE Nombre LIKE '%" + pelicula + "%'" ;
-			PreparedStatement preparedStat = conn.prepareStatement(filmsCountQuery);
-			ResultSet st = preparedStat.executeQuery();
-			Integer nfilms = st.getInt("Cuenta");
-			if (nfilms > 1) {
-				String filmsQuery = "SELECT * FROM peliculas WHERE Nombre LIKE '%" + pelicula + "%'";
-				PreparedStatement preparedStat2 = conn.prepareStatement(filmsQuery);
-				ResultSet st2 = preparedStat2.executeQuery();
-				String listadoFilms = "<hr><p>Estas peliculas coinciden con tu busqueda. ¿Cual es la que desea buscar?"
-						+ "<ul>";
-				while(st2.next()) {
-					listadoFilms += "<li>" + st2.getString("Nombre") + "</li>"; 
-				}
-				listadoFilms += "</ul></p>";
-				html += listadoFilms;
-			}else {
-				String filmCastQuery = "SELECT NombreActor FROM actuaEn WHERE NombrePeli LIKE '%" + pelicula + "%'";
-				PreparedStatement preparedStat3 = conn.prepareStatement(filmCastQuery);
-				ResultSet st3 = preparedStat3.executeQuery();
-				String casting = "<hr><p>Estos son los actores que forman parte de '" + pelicula + "' :"
-						+ "<ul>";
-				while(st3.next()) {
-					casting += "<li>" + st3.getString("NombreActor") + "</li>";
-				}
-				casting += "</ul></p>";
-				html += casting;
-			}
-			html += FOOTER;
-			return(html);
+			html += selectFilm(pelicula,conn);
 		}
+		
+		html += FOOTER;
+		return(html);
 	}
+	
+	
 	
 	public static void main (String[] args) {
 		port(getHerokuAssignedPort());
 		try {
 			//Inicio de Driver para base de datos
-			conn = DriverManager.getConnection("jdbc:sqlite:database.db");	
+			conn = DriverManager.getConnection("jdbc:sqlite:database2.db");	
+			conn.setAutoCommit(false);
+
 			
 			//Recursos de la APP
 			get("/",Main::mainHTML);
@@ -355,6 +368,6 @@ public class Main {
 	if (processBuilder.environment().get("PORT") != null) {
 	    return Integer.parseInt(processBuilder.environment().get("PORT"));
 	}
-	return 4560; // return default port if heroku-port isn't set (i.e. on localhost)
+	return 4562; // return default port if heroku-port isn't set (i.e. on localhost)
     }
 }
