@@ -59,7 +59,7 @@ public class Graph {
     }
 
    /**
-     * Initializes a graph from the specified file, using the specified delimiter.
+     * Initializes a graph from the specified file, using the specified delimiter
      *
      * @param filename the name of the file
      * @param delimiter the delimiter
