@@ -77,7 +77,7 @@ public class Graph {
     }
 
    /**
-     * Returns the number of vertices in this graph.
+     * Returns the number of vertices in this graph
      *
      * @return the number of vertices in this graph
      */
